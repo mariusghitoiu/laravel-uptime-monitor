@@ -2,6 +2,7 @@
 
 namespace Spatie\UptimeMonitor;
 
+use App\Models\Country;
 use Generator;
 use GrahamCampbell\GuzzleFactory\GuzzleFactory;
 use GuzzleHttp\Exception\TransferException;
@@ -46,6 +47,16 @@ class MonitorCollection extends Collection
 
         foreach ($this->items as $monitor) {
             ConsoleOutput::info("Checking {$monitor->url}");
+
+            // disable verify for CUBA urls.
+            if($monitor->microservice?->application?->country_id == 54) {
+                $guzzleOptions = config('uptime-monitor.uptime_check.guzzle_options', []);
+                $guzzleOptions['verify'] = false;
+                $client = GuzzleFactory::make(
+                    $guzzleOptions,
+                    config('uptime-monitor.uptime-check.retry_connection_after_milliseconds', 100)
+                );
+            }
 
             $promise = $client->requestAsync(
                 $monitor->uptime_check_method,
